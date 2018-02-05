@@ -108,7 +108,7 @@ function adjustWindowSize() {
   $('#graph_container').width(window.innerWidth-32);
 
   if (graph) {
-    graph.replot({resetAxes: true});
+    graph.replot({resetAxes: false});
   }
 }
 

@@ -95,6 +95,9 @@ class API():
             if set(data.keys()) != set(self.api.databaseColumns()):
                 raise cherrypy.HTTPError(400)
 
+            if len(filter(lambda c: data[c], self.api.databaseColumns())) == 0:
+                return {}
+
             with helpers.DatabaseCursor() as cursor:
                 cursor.execute('SELECT MAX(timestamp) AS lastTimestamp FROM utilities')
                 rows = cursor.fetchall()
