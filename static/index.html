@@ -1,0 +1,220 @@
+<!doctype html>
+<html>
+<head>
+<title>Utilities logging</title>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<link rel="stylesheet" type="text/css" href="style.css">
+<link rel="stylesheet" type="text/css" href="jquery-ui.min.css">
+<script src="jquery.min.js"></script>
+<script src="jquery-ui.min.js"></script>
+<script type="text/javascript" src="jquery.jqplot.min.js"></script>
+<script type="text/javascript" src="plugins/jqplot.dateAxisRenderer.js"></script>
+<script type="text/javascript" src="plugins/jqplot.pointLabels.js"></script>
+<script type="text/javascript" src="plugins/jqplot.cursor.js"></script>
+<link rel="stylesheet" type="text/css" href="jquery.jqplot.min.css">
+<script type="text/javascript">
+
+var resizeTimer = null;
+
+var graph = null;
+var config = null;
+
+function getLabels(l) {
+  var rc = [];
+  $.each(l, function(index, value) {
+    var label = value['label'];
+    if (value['displayAdjustments']) {
+      if (value['scale'] != 1) {
+        label += ' * '+value['scale'];
+      }
+      if (value['adjust'] != 0) {
+        label += ' + '+value['adjust'];
+      }
+    }
+    rc.push({label: label});
+  });
+  return rc;
+}
+
+function displayGraph() {
+  if (graph != null) {
+    graph.destroy();
+    graph = null;
+  }
+
+  var d = new Date();
+  d.setMonth(d.getMonth() - 15);
+
+  $.ajax({
+    dataType: 'json',
+    url: 'api/utilities/1.0/data',
+    method: 'GET',
+    contentType: 'application/json',
+  }).done(function(data) {
+    graph = $.jqplot('graph', data['history'], {
+      title: 'Utilities',
+      width: 800,
+      seriesDefaults: {
+        showMarker: false,
+      },
+      legend: {
+        show: true,
+      },
+      series: getLabels(config),
+      axes: {
+        xaxis: {
+          renderer: $.jqplot.DateAxisRenderer,
+          min: d
+        },
+        yaxis: {
+          min: 0
+        },
+      },
+      cursor: {
+        show: true,
+        followMouse: true,
+        zoom: true,
+        clickReset: true,
+        dblClickReset: false
+      },
+    });
+    
+    $.each(config, function(index, value) {
+      if (data['prediction'][value['name']] != null) {
+        $('#'+value['name']).attr('placeholder', data['prediction'][value['name']].toFixed(value['decimal']));
+      }
+    });
+
+    $('#input_container').show();
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    if (jqXHR.status == 403) {
+      $('#graph').html('Access denied');
+      $('#graph').css('color', 'red');
+    } else if (textStatus && errorThrown) {
+      alert('Communication error ['+textStatus+': '+errorThrown+']');
+    } else {
+      alert('Communication error');
+    }
+  });
+}
+
+// For window size changes, adjust the button dimensions to fit the new
+// window size.
+function adjustWindowSize() {
+  if (resizeTimer) {
+    clearInterval(resizeTimer);
+    resizeTimer = null;
+  }
+  $('#graph_container').width(window.innerWidth-32);
+
+  if (graph) {
+    graph.replot({resetAxes: true});
+  }
+}
+
+function getConfig() {
+  $.ajax({
+    dataType: 'json',
+    url: 'api/utilities/1.0/config',
+    method: 'GET',
+    contentType: 'application/json',
+  }).done(function(data) {
+    config = data;
+    tabindex = 1;
+
+    $.each(config, function(index, value) {
+      if (value['update'] == false) {
+        return;
+      }
+      var tr = $('<tr>');
+
+      var td = $('<td>');
+      td.html(value['label']);
+      tr.append(td);
+
+      var input = $('<input>');
+      input.attr('id', value['name']);
+      input.attr('type', 'number');
+      input.attr('pattern', value['pattern']);
+      input.attr('tabindex', tabindex++);
+      var td = $('<td>');
+      td.append(input);
+      tr.append(td);
+
+      $('#input_container').append(tr);
+    });
+
+    var tr = $('<tr>');
+
+    var td = $('<td>');
+    tr.append(td);
+
+    var button = $('<button>');
+    button.html('Add reading');
+    button.attr('id', 'add_reading');
+    button.attr('tabindex', tabindex);
+    var td = $('<td>');
+    td.append(button);
+    tr.append(td);
+    $('#input_container').append(tr);
+
+    $('#add_reading').click(function() {
+      data = new Object();
+      $.each(config, function(index, value) {
+        data[value['name']] = $('#'+value['name']).val();
+      });
+      $.ajax({
+        dataType: 'json',
+        url: 'api/utilities/1.0/data',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data)
+      }).done(function(data) {
+        $.each(config, function(index, value) {
+          $('#'+value['name']).val('');
+        });
+        displayGraph();
+      }).fail(function(jqXHR, textStatus, errorThrown) {
+        if (textStatus && errorThrown) {
+          alert('Communication error ['+textStatus+': '+errorThrown+']');
+        } else {
+          alert('Communication error');
+        }
+      });
+    });
+  }).fail(function(jqXHR, textStatus, errorThrown) {
+    if (textStatus && errorThrown) {
+      alert('Communication error ['+textStatus+': '+errorThrown+']');
+    } else {
+      alert('Communication error');
+    }
+  });
+}
+
+$(document).ready(function() {
+  getConfig();
+
+  // If the window size changes then also call adjustWindowSize() after 100ms.
+  $(window).resize(function() {
+    if (resizeTimer) {
+      clearInterval(resizeTimer);
+      resizeTimer = null;
+    }
+    resizeTimer = setInterval(adjustWindowSize, 100);
+  });
+
+  // Make the graph fit the window,
+  adjustWindowSize();
+
+  displayGraph();
+});
+</script>
+</head>
+<body>
+<table id="graph_container">
+<tr><td><div id="graph"></div></td></tr>
+</table>
+<table id="input_container" style="display: none">
+</table>
+</body>
+</html>
