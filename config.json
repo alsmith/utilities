@@ -1,6 +1,7 @@
 [
  {"name": "water",
   "label": "Water",
+  "enabled": true,
   "decimal": 2,
   "pattern": "[0-9\\.]*",
   "raw": false,
@@ -11,8 +12,9 @@
   "sum": false,
   "update": true},
 
- {"name": "electricity_t1",
-  "label": "Electricity Normal tarif",
+ {"name": "electricity_ht",
+  "label": "Electricity Hochtarif",
+  "enabled": true,
   "decimal": 0,
   "pattern": "[0-9]*",
   "raw": false,
@@ -23,8 +25,9 @@
   "sum": false,
   "update": true},
 
- {"name": "electricity_t2",
-  "label": "Electricity Night tarif",
+ {"name": "electricity_lt",
+  "label": "Electricity Niedertarif",
+  "enabled": true,
   "decimal": 0,
   "pattern": "[0-9]*",
   "raw": false,
@@ -37,6 +40,7 @@
 
  {"name": "electricity",
   "label": "Electricity",
+  "enabled": true,
   "raw": false,
   "scale": 1,
   "adjust": 0,
@@ -47,6 +51,7 @@
 
  {"name": "gas",
   "label": "Gas",
+  "enabled": true,
   "decimal": 3,
   "pattern": "[0-9\\.]*",
   "raw": false,
@@ -56,5 +61,16 @@
   "floor": null,
   "sum": false,
   "update": true},
+ 
+ {"name": "averageTemp",
+  "label": "Predicted consumption",
+  "enabled": false,
+  "raw": true,
+  "scale": -1,
+  "adjust": 22,
+  "displayAdjustments": false,
+  "floor": 0,
+  "sum": false,
+  "update": false}
 ]
 

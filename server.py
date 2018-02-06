@@ -141,7 +141,11 @@ class API():
         return filter(lambda u: u['name'] == utility, self.getConfig())[0]
 
     def databaseColumns(self, updateOnly=True, includeSumColumns=False):
-        return map(lambda v: v['name'], filter(lambda u: not updateOnly or u['update'], filter(lambda s: not s['sum'] or includeSumColumns, self.getConfig())))
+        columns = self.getConfig()
+        columns = filter(lambda c: c['enabled'], columns)
+        columns = filter(lambda c: not c['sum'] or includeSumColumns, columns)
+        columns = filter(lambda c: not updateOnly or c['update'], columns)
+        return map(lambda v: v['name'], columns)
 
     @staticmethod
     def databaseParameters():
