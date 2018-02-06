@@ -110,7 +110,7 @@ class API():
                     map(lambda u: data[u] and data[u] or None, self.api.databaseColumns()))
                 thisId = cursor.lastrowid()
 
-                if cherrypy.config['computeAverageTemp'] and lastTimestamp:
+                if 'averageTemp' in self.api.databaseColumns():
                     cursor.execute('SELECT MAX(timestamp) AS thisTimestamp FROM utilities')
                     rows = cursor.fetchall()
                     thisTimestamp = rows[0]['thisTimestamp']
